@@ -199,8 +199,6 @@ def setPageNumber (crds, fonts, pageSide) :
 	scribus.setFontSize(fonts['pageNum']['size'], pNumBox)
 
 
-
-
 def sanitise (row) :
 	'''Clean up a raw row input dict here.
 	To do this we will add a "row =" for each step'''
