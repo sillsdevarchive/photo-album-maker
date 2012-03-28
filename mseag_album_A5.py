@@ -34,8 +34,8 @@ from itertools import *
 
 # File locations
 # Data file and path (this must be a csv file in the MS Excel dialect)
-dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/data-2012-final.csv'
-#dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/test.csv'
+#dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/data-2012-final.csv'
+dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/test.csv'
 
 # Immage folder path
 imagedir = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/images/4-gray-300'
@@ -78,23 +78,23 @@ def getCoordinates (dim, fonts) :
 	while r < rows :
 
 		# Build some repeating coords and dimensions
-		bodyYPos                = dim['margins']['top']
-		bodyXPos                = dim['margins']['left']
-		bodyHeight              = dim['page']['height'] - (dim['margins']['top'] + dim['margins']['bottom'])
-		bodyWidth               = dim['page']['width'] - (dim['margins']['left'] + dim['margins']['right'])
-		rowHeight               = (bodyHeight / rows) * 0.8
-		rowWidth                = bodyWidth
+		bodyYPos                = dim['margins']['top'] + 1
+		bodyXPos                = dim['margins']['left'] + 1
+		bodyHeight              = dim['page']['height'] - (dim['margins']['top'] + dim['margins']['bottom']) - 2
+		bodyWidth               = dim['page']['width'] - (dim['margins']['left'] + dim['margins']['right']) - 2
+		rowHeight               = ((bodyHeight / rows) * 0.8) - 1
+		rowWidth                = bodyWidth -1
 		rowVerticalGap          = (bodyHeight - (rowHeight * rows)) / (rows - 1)
 		if r == 0 :
 			rowYPos             = bodyYPos
 		else :
 			rowYPos             = bodyYPos + (rowHeight + rowVerticalGap) * r
 
-		rowXPos                 = dim['margins']['left']
-		nameLastHeight          = fonts['nameLast']['size'] * 1.3
-		nameFirstHeight         = fonts['nameFirst']['size'] * 1.5
-		imageHeight             = rowHeight - nameFirstHeight
-		imageWidth              = bodyWidth / 2
+		rowXPos                 = bodyXPos
+		nameLastHeight          = (fonts['nameLast']['size'] * 1.3) + 2
+		nameFirstHeight         = (fonts['nameFirst']['size'] * 1.5) + 2
+		imageHeight             = (rowHeight - nameFirstHeight) - 1
+		imageWidth              = (bodyWidth / 2) - 2
 		pageNumWidth            = bodyWidth * 0.05
 
 		# Append a dict of the coords for this row
@@ -113,29 +113,29 @@ def getCoordinates (dim, fonts) :
 			'nameLastHeight'    : nameLastHeight,
 			'nameLastWidth'     : rowHeight,
 			'nameFirstYPos'     : rowYPos,
-			'nameFirstXPos'     : rowXPos + nameLastHeight,
+			'nameFirstXPos'     : rowXPos + nameLastHeight + 1,
 			'nameFirstHeight'   : nameFirstHeight,
 			'nameFirstWidth'    : imageWidth,
-			'imageYPos'         : rowYPos + nameFirstHeight,
-			'imageXPos'         : rowXPos + nameLastHeight,
+			'imageYPos'         : rowYPos + nameFirstHeight + 1,
+			'imageXPos'         : rowXPos + nameLastHeight + 1,
 			'imageHeight'       : imageHeight,
 			'imageWidth'        : imageWidth,
 			'countryYPos'       : rowYPos,
-			'countryXPos'       : rowXPos + nameLastHeight + imageWidth,
+			'countryXPos'       : rowXPos + nameLastHeight + imageWidth + 2,
 			'countryHeight'     : nameFirstHeight,
-			'countryWidth'      : rowWidth - (nameLastHeight + imageWidth),
-			'assignYPos'        : rowYPos + nameFirstHeight,
-			'assignXPos'        : rowXPos + nameLastHeight + imageWidth,
-			'assignHeight'      : (rowHeight - nameFirstHeight) * 0.35,
-			'assignWidth'       : rowWidth - (nameLastHeight + imageWidth),
-			'verseYPos'         : (rowYPos + nameFirstHeight) + (rowHeight - nameFirstHeight) * 0.3,
-			'verseXPos'         : rowXPos + nameLastHeight + imageWidth,
-			'verseHeight'       : (rowHeight - nameFirstHeight) * 0.7,
-			'verseWidth'        : rowWidth - (nameLastHeight + imageWidth),
+			'countryWidth'      : rowWidth - (nameLastHeight + imageWidth) - 1,
+			'assignYPos'        : rowYPos + nameFirstHeight + 1,
+			'assignXPos'        : rowXPos + nameLastHeight + imageWidth + 2,
+			'assignHeight'      : (rowHeight - nameFirstHeight) * 0.3,
+			'assignWidth'       : rowWidth - (nameLastHeight + imageWidth) - 1,
+			'verseYPos'         : (rowYPos + nameFirstHeight) + (rowHeight - nameFirstHeight) * 0.35,
+			'verseXPos'         : rowXPos + nameLastHeight + imageWidth + 2,
+			'verseHeight'       : (rowHeight - nameFirstHeight) * 0.60,
+			'verseWidth'        : rowWidth - (nameLastHeight + imageWidth) - 1,
 			'pageNumYPos'       : bodyYPos - nameFirstHeight,
-			'pageNumXPosOdd'    : bodyXPos + bodyWidth,
-			'pageNumXPosEven'   : bodyXPos - pageNumWidth,
-			'pageNumHeight'     : nameFirstHeight * 1.2,
+			'pageNumXPosOdd'    : bodyXPos + bodyWidth + 2,
+			'pageNumXPosEven'   : bodyXPos - pageNumWidth - 2,
+			'pageNumHeight'     : nameFirstHeight * 1.25,
 			'pageNumWidth'      : pageNumWidth
 		})
 
@@ -267,6 +267,7 @@ if scribus.newDocument(getattr(scribus, dimensions['page']['scribusPageCode']),
 		nameLastBox = scribus.createText(crds[row]['nameLastXPos'], crds[row]['nameLastYPos'], crds[row]['nameLastWidth'], crds[row]['nameLastHeight'])
 		scribus.setText(records[recCount]['NameLast'], nameLastBox)
 		scribus.setTextAlignment(scribus.ALIGN_RIGHT, nameLastBox)
+		scribus.setTextDistances(0, 0, 0, 0, nameLastBox)
 		scribus.setFont(fonts['nameLast']['bold'], nameLastBox)
 		scribus.setFontSize(fonts['nameLast']['size'], nameLastBox)
 		scribus.setTextShade(80, nameLastBox)

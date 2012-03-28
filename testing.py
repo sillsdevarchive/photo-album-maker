@@ -61,3 +61,5 @@ while c < len(records) :
 	print records[c]['NameLast'] + ': ' + records[c]['NameFirst'] + ' [' + records[c]['Assignment'] + ']'
 
 	c+=1
+
+
