@@ -34,11 +34,11 @@ from itertools import *
 
 # File locations
 # Data file and path (this must be a csv file in the MS Excel dialect)
-#dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/data-2012-final.csv'
-dataFileName = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/data/test.csv'
+dataFileName = '/home/dennis/Publishing/MSEAG/CPA2014/data/Conference Photo Book 2014 - Sheet1.csv'
+#dataFileName = '/home/dennis/Publishing/MSEAG/CPA2014/data/test.csv'
 
 # Immage folder path
-imagedir = '/home/dennis/Publishing/MSEAG/PhotoAlbum/2012/images/4-gray-300'
+imagedir = '/home/dennis/Publishing/MSEAG/CPA/images'
 
 # Set the caption font info (font must be present on the system)
 fonts       = {
@@ -132,10 +132,10 @@ def getCoordinates (dim, fonts) :
 			'verseXPos'         : rowXPos + nameLastHeight + imageWidth + 2,
 			'verseHeight'       : (rowHeight - nameFirstHeight) * 0.60,
 			'verseWidth'        : rowWidth - (nameLastHeight + imageWidth) - 1,
-			'pageNumYPos'       : bodyYPos - nameFirstHeight,
-			'pageNumXPosOdd'    : bodyXPos + bodyWidth + 2,
-			'pageNumXPosEven'   : bodyXPos - pageNumWidth - 2,
-			'pageNumHeight'     : nameFirstHeight * 1.25,
+			'pageNumYPos'       : bodyYPos - (nameFirstHeight - 5),
+			'pageNumXPosOdd'    : bodyXPos + bodyWidth - (pageNumWidth - 1),
+			'pageNumXPosEven'   : bodyXPos - pageNumWidth + (pageNumWidth - 1),
+			'pageNumHeight'     : nameFirstHeight - 5,
 			'pageNumWidth'      : pageNumWidth
 		})
 
@@ -191,9 +191,9 @@ def setPageNumber (crds, fonts, pageSide) :
 	# Put the page number in it and format according to the page we are on
 	scribus.setText(`pageNumber`, pNumBox)
 	if pageSide == 'Odd' :
-		scribus.setTextAlignment(scribus.ALIGN_LEFT, pNumBox)
-	else:
 		scribus.setTextAlignment(scribus.ALIGN_RIGHT, pNumBox)
+	else:
+		scribus.setTextAlignment(scribus.ALIGN_LEFT, pNumBox)
 
 	scribus.setFont(fonts['pageNum']['bold'], pNumBox)
 	scribus.setFontSize(fonts['pageNum']['size'], pNumBox)
@@ -225,7 +225,7 @@ totalRecs       = len(records)
 
 # Reality check first to see if we have anything to process
 if totalRecs <= 0 :
-	scribus.messageBox('Not Found', 'No records found to process!', scribus.BUTTON_OK)
+	scribus.messageBox('Not Found', 'No records found to process!')
 	sys.exit()
 
 pageNumber      = 1
@@ -312,7 +312,7 @@ if scribus.newDocument(getattr(scribus, dimensions['page']['scribusPageCode']),
 
 		# Place the verse element in this row
 		verseBox = scribus.createText(crds[row]['verseXPos'], crds[row]['verseYPos'], crds[row]['verseWidth'], crds[row]['verseHeight'])
-		scribus.setText(records[recCount]['BibleVerse'], verseBox)
+		scribus.setText(records[recCount]['Prayer'], verseBox)
 		scribus.setTextAlignment(scribus.ALIGN_LEFT, verseBox)
 		scribus.setFont(fonts['verse']['regular'], verseBox)
 		scribus.setFontSize(fonts['verse']['size'], verseBox)

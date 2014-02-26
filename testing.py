@@ -62,4 +62,3 @@ while c < len(records) :
 
 	c+=1
 
-
