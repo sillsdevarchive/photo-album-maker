@@ -48,3 +48,6 @@ class Crush (object) :
 		crushFile = inFile.replace('.png', '-nq8.png')
 		shutil.copyfile(crushFile, inFile)
 		os.remove(crushFile)
+
+
+

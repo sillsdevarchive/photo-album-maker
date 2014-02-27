@@ -47,3 +47,6 @@ class Tools (object) :
 		# Send out an error message at x:200,y:200
 		window.geometry("1x1+200+200")#remember its .geometry("WidthxHeight(+or-)X(+or-)Y")
 		tkMessageBox.showerror(title="error", message=msg, parent=window)
+
+
+

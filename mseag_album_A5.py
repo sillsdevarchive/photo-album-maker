@@ -4,21 +4,37 @@
 This is a Scribus script that will insert data for a photo album into a
 document that it creates. It will also insert the photos as well which
 need to be prepared externally. This script is based on three row per page
-layout.'''
+layout.
 
 __version__ = '0.1'
 __date__    = '20 March 2012'
 __author__  = 'Dennis Drescher <dennis_drescher@sil.org>'
-__credits__ = '''\
+__credits__ = \
+
 Original ideas for this script came from the scribalbum_letter.py script by
 Gregory Pittman, version: 2008.07.23.
 
-LICENSE: This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the Free
-Software Foundation; either version 2 of the License, or (at your option) any
-later version.'''
+#############################################
 
-import sys, os, csv
+LICENSE:
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+'''
+
+
+import sys, os, csv, subprocess
 
 
 # Import libs
@@ -34,11 +50,15 @@ from itertools import *
 
 # File locations
 # Data file and path (this must be a csv file in the MS Excel dialect)
-dataFileName = '/home/dennis/Publishing/MSEAG/CPA2014/data/Conference Photo Book 2014 - Sheet1.csv'
-#dataFileName = '/home/dennis/Publishing/MSEAG/CPA2014/data/test.csv'
+#dataFileName       = '/home/dennis/Publishing/MSEAG/CPA2014/data/Conference Photo Book 2014 - Sheet1.csv'
+dataFileName        = '/home/dennis/Publishing/MSEAG/CPA2014/data/test.csv'
+watermark           = 'DRAFT'
+pdfFile             = '/home/dennis/Publishing/MSEAG/CPA2014/draft/test.pdf'
+makePdf             = True
+viewPdf             = True
 
 # Immage folder path
-imagedir = '/home/dennis/Publishing/MSEAG/CPA/images'
+imagedir        = '/home/dennis/Publishing/MSEAG/CPA/images'
 
 # Set the caption font info (font must be present on the system)
 fonts       = {
@@ -213,6 +233,35 @@ def select (row) :
 	return row['NameFirst'] != ''
 
 
+def addWatermark () :
+	'''Create a Draft watermark layer. This was taken from:
+		http://wiki.scribus.net/canvas/Adding_%27DRAFT%27_to_a_document'''
+
+	L = len(watermark)                              # The length of the word
+													# will determine the font size
+	scribus.defineColor("gray", 11, 11, 11, 11)     # Set your own color here
+
+	u  = scribus.getUnit()                          # Get the units of the document
+	al = scribus.getActiveLayer()                   # Identify the working layer
+	scribus.setUnit(scribus.UNIT_MILLIMETERS)       # Set the document units to mm,
+	(w,h) = scribus.getPageSize()                   # needed to set the text box size
+
+	scribus.createLayer("c")
+	scribus.setActiveLayer("c")
+
+	T = scribus.createText(w/6, 6*h/10 , h, w/2)    # Create the text box
+	scribus.setText(watermark, T)                   # Insert the text
+	scribus.setTextColor("gray", T)                 # Set the color of the text
+	scribus.setFontSize((w/210)*(180 - 10*L), T)    # Set the font size according to length and width
+
+	scribus.rotateObject(45, T)                     # Turn it round antclockwise 45 degrees
+	scribus.setUnit(u)                              # return to original document units
+# FIXME: It would be nice if we could move the watermark box down to the lowest layer so
+# that it is under all the page text. Have not found a method to do this. For now we just
+# plop the watermark on top of everything else.
+	scribus.setActiveLayer(al)                      # return to the original active layer
+
+
 ###############################################################################
 ########################## Start the main process #############################
 ###############################################################################
@@ -259,9 +308,18 @@ if scribus.newDocument(getattr(scribus, dimensions['page']['scribusPageCode']),
 
 		########### Now set the current record in the current row ##########
 
+		# Adjust the NameFirst field to include the spouse if there is one
+		if records[recCount]['Spouse'] != '' :
+			records[recCount]['NameFirst'] = records[recCount]['NameFirst'] + ' & ' + records[recCount]['Spouse']
+
+
 		# Set our record count for progress display and send a status message
 		scribus.progressSet(recCount)
 		scribus.statusMessage('Placing record ' + `recCount` + ' of ' + `totalRecs`)
+
+		# Add a watermark if a string is specified
+		if watermark :
+			addWatermark()
 
 		# Put the last name element in this row
 		nameLastBox = scribus.createText(crds[row]['nameLastXPos'], crds[row]['nameLastYPos'], crds[row]['nameLastWidth'], crds[row]['nameLastHeight'])
@@ -328,3 +386,24 @@ if scribus.newDocument(getattr(scribus, dimensions['page']['scribusPageCode']),
 			row +=1
 
 		recCount +=1
+
+
+###############################################################################
+############################## Output Results #################################
+###############################################################################
+
+# Now we will output the results to PDF if that is desired
+if makePdf :
+	pdfExport =  scribus.PDFfile()
+	pdfExport.info = pdfFile
+#    pdfExport.pages = [seitennummer]
+	pdfExport.file = pdfFile
+	pdfExport.save()
+
+# View the output if set
+if viewPdf :
+	cmd = ['evince', pdfFile]
+	try :
+		subprocess.Popen(cmd)
+	except Exception as e :
+		result = scribus.messageBox ('View PDF command failed with: ' + str(e), scribus.BUTTON_OK)
