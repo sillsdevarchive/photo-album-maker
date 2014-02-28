@@ -20,12 +20,17 @@
 #    suite 500, Boston, MA 02110-1335, USA or visit their web page on the
 #    internet at http://www.fsf.org/licenses/lgpl.html.
 
+# Description
+#
+# This module provides a simple Python interface to various ImageMagick
+# functions it will access through the subprocess module.
+
+
 # Import modules
 import sys, os, shutil, subprocess, tempfile
-from shrinkypic.process             import tools
 
 
-class ImProcess (object) :
+class ImgProcess (object) :
 
 	def __init__ (self, parent=None) :
 		self.tools          = tools.Tools()
