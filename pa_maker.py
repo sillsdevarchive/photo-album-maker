@@ -54,36 +54,47 @@ sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
 import      scribus
 import      palaso.unicsv as csv
 import      operator
-from        itertools           import *
+from        itertools                       import *
 
 # Import local pa libs
-from        pa_maker.process    import img_process
+from        pa_maker.process.img_process    import ImgProcess
 
 
-class PAMaker (img_process.ImgProcess) :
+class PAMaker (object) :
 
 	def __init__ (self, parent=None) :
 		'''Initialize and start up the script'''
 
 #        import pdb; pdb.set_trace()
 
+		self.img_process        = ImgProcess()
+
 ###############################################################################
 ########################### Script Setup Parameters ###########################
 ###############################################################################
 
-		# File locations
+		self.mode               = 'draft'
+		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
+		self.dataDir            = os.path.join(self.projectDir, 'data')
+		self.draftDir           = os.path.join(self.projectDir, 'draft')
+		self.proofDir           = os.path.join(self.projectDir, 'proof')
+		self.finalDir           = os.path.join(self.projectDir, 'final')
+		self.deliverableDir     = os.path.join(self.projectDir, 'deliverable')
+		self.imagesDir          = os.path.join(self.projectDir, 'images')
+		self.orgImgDir          = os.path.join(self.imagesDir, 'org')
+		self.jpgImgDir          = os.path.join(self.imagesDir, 'jpg')
+		self.pngImgDir          = os.path.join(self.imagesDir, 'png')
+		self.placeholderPic     = os.path.join(self.imagesDir, 'profile.png')
+		self.watermark          = self.mode.upper()
+		# The PDF output location is determined by the mode
+		self.pdfFile            = os.path.join(getattr(self, self.mode + 'Dir'), 'test.pdf')
 		# Data file and path (this must be a csv file in the MS Excel dialect)
-		#dataFileName       = '/home/dennis/Publishing/MSEAG/CPA2014/data/Conference Photo Book 2014 - Sheet1.csv'
-		self.dataFileName       = '/home/dennis/Publishing/MSEAG/CPA2014/data/test.csv'
-		self.watermark          = 'DRAFT'
-		self.pdfFile            = '/home/dennis/Publishing/MSEAG/CPA2014/draft/test.pdf'
-		self.orgImgDir          = '/home/dennis/Publishing/MSEAG/CPA2014/images/org'
-		self.jpgImgDir          = '/home/dennis/Publishing/MSEAG/CPA2014/images/jpg'
-		self.pngImgDir          = '/home/dennis/Publishing/MSEAG/CPA2014/images/png'
-		self.placeholderPic     = '/home/dennis/Publishing/MSEAG/CPA2014/images/profile.png'
+		self.dataFile           = os.path.join(self.dataDir, 'test.csv')
+		# Max height for print will be around 800-1000px, electronic view 200-400px
+		self.maxHeight          = '800'
 		self.makePdf            = True
 		self.viewPdf            = True
-		self.willBePngImg       = False
+		self.willBePngImg       = True
 
 		# Set the caption font info (font must be present on the system)
 		self.fonts = {
@@ -108,6 +119,27 @@ class PAMaker (img_process.ImgProcess) :
 							'rows'      : {'count' : 3}
 							}
 
+		# Create project folders if necessary
+		if not os.path.exists(self.projectDir) :
+			os.makedirs(self.projectDir)
+		if not os.path.exists(self.dataDir) :
+			os.makedirs(self.dataDir)
+		if not os.path.exists(self.draftDir) :
+			os.makedirs(self.draftDir)
+		if not os.path.exists(self.proofDir) :
+			os.makedirs(self.proofDir)
+		if not os.path.exists(self.finalDir) :
+			os.makedirs(self.finalDir)
+		if not os.path.exists(self.deliverableDir) :
+			os.makedirs(self.deliverableDir)
+		if not os.path.exists(self.imagesDir) :
+			os.makedirs(self.imagesDir)
+		if not os.path.exists(self.orgImgDir) :
+			os.makedirs(self.orgImgDir)
+		if not os.path.exists(self.jpgImgDir) :
+			os.makedirs(self.jpgImgDir)
+		if not os.path.exists(self.pngImgDir) :
+			os.makedirs(self.pngImgDir)
 
 ###############################################################################
 ################################## Functions ##################################
@@ -206,28 +238,6 @@ class PAMaker (img_process.ImgProcess) :
 			result = scribus.messageBox ('File not Found', 'Data file: [' + csvFile + '] not found!', scribus.BUTTON_OK)
 
 
-#    def getLineWidth (self, text, font, size) :
-#        '''Get the width of a single line of text.  This is for text objects that
-#        are set on a single line.'''
-
-#        # Create a temp box in the upper left and figure out how big it needs to be
-#        tempBox = scribus.createText(10, 10, len(text), 1.3 * size)
-#        scribus.setText(text, tempBox)
-#        scribus.setFont(font, tempBox)
-#        scribus.setFontSize(size, tempBox)
-#    #    scribus.textFlowMode(tempBox, 0)
-#        (width, height) = scribus.getSize(tempBox)
-#        while scribus.textOverflows(tempBox) > 0 :
-#            width += 1
-#            scribus.sizeObject(width, height, tempBox)
-#            (width, height) = scribus.getSize(tempBox)
-
-#        # Delete the temp box and send back the results
-#        scribus.deleteObject(tempBox)
-
-#        return width
-
-
 	def setPageNumber (self, crds, pageSide, row, pageNumber) :
 		'''Place the page number on the page'''
 
@@ -295,7 +305,7 @@ class PAMaker (img_process.ImgProcess) :
 
 		# Load up all the file and record information.
 		# Use CSV reader to build list of record dicts
-		records         = self.loadCSVData(self.dataFileName)
+		records         = self.loadCSVData(self.dataFile)
 		totalRecs       = len(records)
 
 		# Reality check first to see if we have anything to process
@@ -358,7 +368,7 @@ class PAMaker (img_process.ImgProcess) :
 
 				# Place the first name element in this row
 				nameFirstBox = scribus.createText(crds[row]['nameFirstXPos'], crds[row]['nameFirstYPos'], crds[row]['nameFirstWidth'], crds[row]['nameFirstHeight'])
-				scribus.setText(records[recCount]['NameFirst'], nameFirstBox)
+				scribus.setText(records[recCount]['Caption'], nameFirstBox)
 				scribus.setTextAlignment(scribus.ALIGN_LEFT, nameFirstBox)
 				scribus.setFont(self.fonts['nameFirst']['boldItalic'], nameFirstBox)
 				scribus.setFontSize(self.fonts['nameFirst']['size'], nameFirstBox)
@@ -367,6 +377,7 @@ class PAMaker (img_process.ImgProcess) :
 				# We will need to do some processing on the first pass
 				# The default output format is JPG
 				orgImgFileName = records[recCount]['Photo']
+				orgImgFile = os.path.join(self.orgImgDir, orgImgFileName)
 				if records[recCount]['Spouse'] != '' :
 					baseImgFileName = records[recCount]['NameLast'] + '_' + records[recCount]['NameFirst'] + '-' + records[recCount]['Spouse']
 				else :
@@ -376,7 +387,9 @@ class PAMaker (img_process.ImgProcess) :
 				else :
 					imgFile = os.path.join(self.jpgImgDir, baseImgFileName + '.jpg')
 
-				# Process the image now
+				# Process the image now if there is none
+				if not os.path.exists(imgFile) :
+					self.img_process.sizePic(orgImgFile, imgFile, self.maxHeight)
 
 				# Double check the output and substitute with placeholder pic
 				if not os.path.exists(imgFile) :

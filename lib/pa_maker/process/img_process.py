@@ -32,76 +32,91 @@ import sys, os, shutil, subprocess, tempfile
 
 class ImgProcess (object) :
 
-	def __init__ (self, parent=None) :
-		self.tools          = tools.Tools()
+#    def __init__ (self, parent=None) :
 
 
 	###############################################################################
 	############################## General Functions ##############################
 	###############################################################################
 
-	def outlinePic (self, inFile) :
-		'''Add a simple outline to a picture. Return the name of the file
-		that was just created.'''
+	def sizePic (self, inFile, rtnFile, maxHeight) :
+		'''Create a resized picture, in the specified format,
+		according to the input values given. Output to the rtnFile
+		handle location.'''
 
-		(name, ext)     = os.path.splitext(inFile)
-		outFile         = name + '-border.jpg'
-		cmd = ['convert', inFile, '-bordercolor', 'black', '-border', '1x1', outFile]
+		# Begin the output command set
+		cmd = ['convert', inFile, '-resize', 'x' + maxHeight, rtnFile]
 
 		# Run the command
 		try :
 			rCode = subprocess.call(cmd)
-			return outFile
+			return true
 		except Exception as e :
-			self.tools.sendError('Imagemagick outline failed with: ' + str(e))
+			print 'Error: Imagemagick outline failed with: ' + str(e)
 
 
-	def processPicFile (self, inFile, outFile, rotate, size, caption, outline=False, viewer=False, compress=True) :
-		'''Prepare the arguments for an Imagemagick process and then run the process.'''
+#    def outlinePic (self, inFile) :
+#        '''Add a simple outline to a picture. Return the name of the file
+#        that was just created.'''
 
-		# Make tempfile
-		workFile        = tempfile.NamedTemporaryFile().name + '.jpg'
-		shutil.copyfile(inFile, workFile)
+#        (name, ext)     = os.path.splitext(inFile)
+#        outFile         = name + '-border.jpg'
+#        cmd = ['convert', inFile, '-bordercolor', 'black', '-border', '1x1', outFile]
 
-		# Add an outline to a pic
-		if self.tools.str2bool(outline) :
-			workFile        = self.outlinePic(workFile)
+#        # Run the command
+#        try :
+#            rCode = subprocess.call(cmd)
+#            return outFile
+#        except Exception as e :
+#            self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
 
-		# Begin the output command set
-		cmds = ['convert']
-		# Set the output size
-		sizeDim = '400x300'
-		fontSize = 18
-		if size :
-			if size.lower() == 'small' :
-				sizeDim = '400x300'
-				fontSize = 18
-			elif size.lower() == 'medium' :
-				sizeDim = '800x600'
-				fontSize = 24
-			elif size.lower() == 'large' :
-				sizeDim = '1024x768'
-				fontSize = 28
-		# Need to append the caption now if there is one
-		if caption :
-			cmds.append('-caption')
-			cmds.append(caption)
-		# Now tack on the input file
-		cmds.append(workFile)
-		# Build the rest of the command set
-		base = ['-thumbnail', sizeDim, '-font', 'Andika-Basic-Regular', \
-			'-pointsize', str(fontSize), '-border', '2x2', '-density', '72', \
-				'-gravity', 'center', '-bordercolor', 'white', '-background', 'black', \
-					'-polaroid', str(rotate), outFile]
-		for c in base :
-			cmds.append(c)
 
-		# Run the command
-		try :
-			rCode = subprocess.call(cmds)
-		except Exception as e :
-			self.sendError('Imagemagick failed with: ' + str(e))
+#    def processPicFile (self, inFile, outFile, rotate, size, caption, outline=False, viewer=False, compress=True) :
+#        '''Prepare the arguments for an Imagemagick process and then run the process.'''
 
-		# View the results (os.system allows the terminal to return right away)
-		if self.tools.str2bool(viewer) :
-			os.system('eog ' + outFile + ' &')
+#        # Make tempfile
+#        workFile        = tempfile.NamedTemporaryFile().name + '.jpg'
+#        shutil.copyfile(inFile, workFile)
+
+#        # Add an outline to a pic
+#        if self.pa_tools.str2bool(outline) :
+#            workFile        = self.outlinePic(workFile)
+
+#        # Begin the output command set
+#        cmds = ['convert']
+#        # Set the output size
+#        sizeDim = '400x300'
+#        fontSize = 18
+#        if size :
+#            if size.lower() == 'small' :
+#                sizeDim = '400x300'
+#                fontSize = 18
+#            elif size.lower() == 'medium' :
+#                sizeDim = '800x600'
+#                fontSize = 24
+#            elif size.lower() == 'large' :
+#                sizeDim = '1024x768'
+#                fontSize = 28
+#        # Need to append the caption now if there is one
+#        if caption :
+#            cmds.append('-caption')
+#            cmds.append(caption)
+#        # Now tack on the input file
+#        cmds.append(workFile)
+#        # Build the rest of the command set
+#        base = ['-thumbnail', sizeDim, '-font', 'Andika-Basic-Regular', \
+#            '-pointsize', str(fontSize), '-border', '2x2', '-density', '72', \
+#                '-gravity', 'center', '-bordercolor', 'white', '-background', 'black', \
+#                    '-polaroid', str(rotate), outFile]
+#        for c in base :
+#            cmds.append(c)
+
+#        # Run the command
+#        try :
+#            rCode = subprocess.call(cmds)
+#        except Exception as e :
+#            self.sendError('Imagemagick failed with: ' + str(e))
+
+#        # View the results (os.system allows the terminal to return right away)
+#        if self.pa_tools.str2bool(viewer) :
+#            os.system('eog ' + outFile + ' &')
