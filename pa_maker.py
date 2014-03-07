@@ -73,8 +73,23 @@ class PAMaker (object) :
 ########################### Script Setup Parameters ###########################
 ###############################################################################
 
+		# This first set of vars are set by the user
 		self.mode               = 'draft'
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
+		# Data file must be a csv file in the MS Excel dialect
+		self.dataFileName       = 'test.csv'
+		# Max height for print will be around 800-1000px, electronic view 200-400px
+		self.maxHeight          = '400'
+		# Image density is 96 for electronic display and 300 for print
+		self.imgDensity         = '96'
+		# Have Scribus create/export the PDF
+		self.makePdf            = True
+		# View the PDF after it has been made
+		self.viewPdf            = True
+		# Use PNG images for lossless quality
+		self.willBePngImg       = False
+
+		# The following are auto generated vals
 		self.dataDir            = os.path.join(self.projectDir, 'data')
 		self.draftDir           = os.path.join(self.projectDir, 'draft')
 		self.proofDir           = os.path.join(self.projectDir, 'proof')
@@ -87,14 +102,8 @@ class PAMaker (object) :
 		self.placeholderPic     = os.path.join(self.imagesDir, 'profile.png')
 		self.watermark          = self.mode.upper()
 		# The PDF output location is determined by the mode
-		self.pdfFile            = os.path.join(getattr(self, self.mode + 'Dir'), 'test.pdf')
-		# Data file and path (this must be a csv file in the MS Excel dialect)
-		self.dataFile           = os.path.join(self.dataDir, 'test.csv')
-		# Max height for print will be around 800-1000px, electronic view 200-400px
-		self.maxHeight          = '800'
-		self.makePdf            = True
-		self.viewPdf            = True
-		self.willBePngImg       = True
+		self.pdfFile            = os.path.join(getattr(self, self.mode + 'Dir'), self.dataFileName.replace('csv', 'pdf'))
+		self.dataFile           = os.path.join(self.dataDir, self.dataFileName)
 
 		# Set the caption font info (font must be present on the system)
 		self.fonts = {
@@ -115,7 +124,7 @@ class PAMaker (object) :
 		# Page dimension information (in points)
 		self.dimensions  = {
 							'page'      : {'height' : 595, 'width' : 421, 'scribusPageCode' : 'PAPER_A5'},
-							'margins'   : {'left' : 30, 'right' : 30, 'top' : 30, 'bottom' : 20},
+							'margins'   : {'left' : 30, 'right' : 30, 'top' : 40, 'bottom' : 20},
 							'rows'      : {'count' : 3}
 							}
 
@@ -209,7 +218,7 @@ class PAMaker (object) :
 				'verseXPos'         : rowXPos + nameLastHeight + imageWidth + 2,
 				'verseHeight'       : (rowHeight - nameFirstHeight) * 0.60,
 				'verseWidth'        : rowWidth - (nameLastHeight + imageWidth) - 1,
-				'pageNumYPos'       : bodyYPos - (nameFirstHeight - 5),
+				'pageNumYPos'       : bodyYPos - nameFirstHeight,
 				'pageNumXPosOdd'    : bodyXPos + bodyWidth - (pageNumWidth - 1),
 				'pageNumXPosEven'   : bodyXPos - pageNumWidth + (pageNumWidth - 1),
 				'pageNumHeight'     : nameFirstHeight - 5,
@@ -390,6 +399,9 @@ class PAMaker (object) :
 				# Process the image now if there is none
 				if not os.path.exists(imgFile) :
 					self.img_process.sizePic(orgImgFile, imgFile, self.maxHeight)
+#                    self.img_process.outlinePic(imgFile, imgFile)
+					self.img_process.scalePic(imgFile, imgFile, self.imgDensity)
+					self.img_process.addPoloroidBorder(imgFile, imgFile)
 
 				# Double check the output and substitute with placeholder pic
 				if not os.path.exists(imgFile) :

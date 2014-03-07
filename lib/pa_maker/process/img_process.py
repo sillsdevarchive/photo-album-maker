@@ -39,6 +39,20 @@ class ImgProcess (object) :
 	############################## General Functions ##############################
 	###############################################################################
 
+	def scalePic (self, inFile, rtnFile, density) :
+		'''Change the image density (dpi).'''
+
+		# Begin the output command set
+		cmd = ['convert', inFile, '-set', 'units', 'pixelsperinch', '-density', density, rtnFile]
+
+		# Run the command
+		try :
+			rCode = subprocess.call(cmd)
+			return true
+		except Exception as e :
+			print 'Error: Imagemagick outline failed with: ' + str(e)
+
+
 	def sizePic (self, inFile, rtnFile, maxHeight) :
 		'''Create a resized picture, in the specified format,
 		according to the input values given. Output to the rtnFile
@@ -55,68 +69,34 @@ class ImgProcess (object) :
 			print 'Error: Imagemagick outline failed with: ' + str(e)
 
 
-#    def outlinePic (self, inFile) :
-#        '''Add a simple outline to a picture. Return the name of the file
-#        that was just created.'''
+	def outlinePic (self, inFile, rtnFile) :
+		'''Add a simple outline to a picture. Return the name of the file
+		that was just created.'''
 
-#        (name, ext)     = os.path.splitext(inFile)
-#        outFile         = name + '-border.jpg'
-#        cmd = ['convert', inFile, '-bordercolor', 'black', '-border', '1x1', outFile]
+		cmd = ['convert', inFile, '-bordercolor', 'black', '-border', '0.5x0.5', rtnFile]
 
-#        # Run the command
-#        try :
-#            rCode = subprocess.call(cmd)
-#            return outFile
-#        except Exception as e :
-#            self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
+		# Run the command
+		try :
+			rCode = subprocess.call(cmd)
+			return True
+		except Exception as e :
+			self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
+			return False
 
 
-#    def processPicFile (self, inFile, outFile, rotate, size, caption, outline=False, viewer=False, compress=True) :
-#        '''Prepare the arguments for an Imagemagick process and then run the process.'''
+	def addPoloroidBorder (self, inFile, rtnFile) :
+		'''Add a Poloroid-like boarder to the picture.'''
 
-#        # Make tempfile
-#        workFile        = tempfile.NamedTemporaryFile().name + '.jpg'
-#        shutil.copyfile(inFile, workFile)
+		cmd = ['convert', inFile, '-bordercolor', 'white', '-border', '20',
+				 '-bordercolor', 'grey60', '-border', '1',
+				  '-background', 'none', '-rotate', '0',
+				   '-background', 'black', '( +clone -shadow 60x4+4+4 )', '+swap',
+					'-background', 'none', '-flatten', rtnFile]
 
-#        # Add an outline to a pic
-#        if self.pa_tools.str2bool(outline) :
-#            workFile        = self.outlinePic(workFile)
-
-#        # Begin the output command set
-#        cmds = ['convert']
-#        # Set the output size
-#        sizeDim = '400x300'
-#        fontSize = 18
-#        if size :
-#            if size.lower() == 'small' :
-#                sizeDim = '400x300'
-#                fontSize = 18
-#            elif size.lower() == 'medium' :
-#                sizeDim = '800x600'
-#                fontSize = 24
-#            elif size.lower() == 'large' :
-#                sizeDim = '1024x768'
-#                fontSize = 28
-#        # Need to append the caption now if there is one
-#        if caption :
-#            cmds.append('-caption')
-#            cmds.append(caption)
-#        # Now tack on the input file
-#        cmds.append(workFile)
-#        # Build the rest of the command set
-#        base = ['-thumbnail', sizeDim, '-font', 'Andika-Basic-Regular', \
-#            '-pointsize', str(fontSize), '-border', '2x2', '-density', '72', \
-#                '-gravity', 'center', '-bordercolor', 'white', '-background', 'black', \
-#                    '-polaroid', str(rotate), outFile]
-#        for c in base :
-#            cmds.append(c)
-
-#        # Run the command
-#        try :
-#            rCode = subprocess.call(cmds)
-#        except Exception as e :
-#            self.sendError('Imagemagick failed with: ' + str(e))
-
-#        # View the results (os.system allows the terminal to return right away)
-#        if self.pa_tools.str2bool(viewer) :
-#            os.system('eog ' + outFile + ' &')
+		# Run the command
+		try :
+			rCode = subprocess.call(cmd)
+			return True
+		except Exception as e :
+			self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
+			return False
