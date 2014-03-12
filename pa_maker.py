@@ -77,13 +77,13 @@ class PAMaker (object) :
 		self.mode               = 'draft'
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'test.csv'
+		self.dataFileName       = 'ConferencePhotoBook20140312.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
 		# Image density is 96 for electronic display and 300 for print
 		self.imgDensity         = '96'
 		# Have Scribus create/export the PDF
-		self.makePdf            = True
+		self.makePdf            = False
 		# View the PDF after it has been made
 		self.viewPdf            = True
 		# Use PNG images for lossless quality
@@ -468,7 +468,7 @@ class PAMaker (object) :
 			pdfExport.save()
 
 		# View the output if set
-		if self.viewPdf :
+		if self.makePdf and self.viewPdf :
 			cmd = ['evince', self.pdfFile]
 			try :
 				subprocess.Popen(cmd)

@@ -100,3 +100,6 @@ class ImgProcess (object) :
 		except Exception as e :
 			self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
 			return False
+
+
+
