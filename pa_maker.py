@@ -74,14 +74,17 @@ class PAMaker (object) :
 ###############################################################################
 
 		# This first set of vars are set by the user
-		self.mode               = 'draft'
+		self.mode               = 'draft' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'ConferencePhotoBook20140312.csv'
+		self.dataFileName       = 'ConferencePhotoBook-20140313.csv'
+#        self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
 		# Image density is 96 for electronic display and 300 for print
 		self.imgDensity         = '96'
+		# Turn on watermark (output mode)
+		self.outputWatermark    = False
 		# Have Scribus create/export the PDF
 		self.makePdf            = False
 		# View the PDF after it has been made
@@ -327,6 +330,10 @@ class PAMaker (object) :
 		row             = 0
 		pageSide        = 'Odd'
 		scribus.progressTotal(totalRecs)
+		paIndex         = {}
+		lastName        = ''
+		firstName       = ''
+		photoFirstName  = ''
 
 		# Get the page layout coordinates for this publication
 		crds = self.getCoordinates(self.dimensions)
@@ -353,21 +360,29 @@ class PAMaker (object) :
 
 				########### Now set the current record in the current row ##########
 
+				# Set the last name
+				lastName = records[recCount]['NameLast']
+
 				# Adjust the NameFirst field to include the spouse if there is one
 				if records[recCount]['Spouse'] != '' :
-					records[recCount]['NameFirst'] = records[recCount]['NameFirst'] + ' & ' + records[recCount]['Spouse']
+					firstName = records[recCount]['NameFirst'] + ' & ' + records[recCount]['Spouse']
+				else :
+					firstName = records[recCount]['NameFirst']
+
+				# Make the photo file name
+				photoFirstName = firstName.replace('&', '-').replace('.', '').replace(' ', '')
 
 				# Set our record count for progress display and send a status message
 				scribus.progressSet(recCount)
 				scribus.statusMessage('Placing record ' + `recCount` + ' of ' + `totalRecs`)
 
 				# Add a watermark if a string is specified
-				if self.watermark :
+				if self.outputWatermark :
 					self.addWatermark()
 
 				# Put the last name element in this row
 				nameLastBox = scribus.createText(crds[row]['nameLastXPos'], crds[row]['nameLastYPos'], crds[row]['nameLastWidth'], crds[row]['nameLastHeight'])
-				scribus.setText(records[recCount]['NameLast'], nameLastBox)
+				scribus.setText(lastName, nameLastBox)
 				scribus.setTextAlignment(scribus.ALIGN_RIGHT, nameLastBox)
 				scribus.setTextDistances(0, 0, 0, 0, nameLastBox)
 				scribus.setFont(self.fonts['nameLast']['bold'], nameLastBox)
@@ -387,10 +402,7 @@ class PAMaker (object) :
 				# The default output format is JPG
 				orgImgFileName = records[recCount]['Photo']
 				orgImgFile = os.path.join(self.orgImgDir, orgImgFileName)
-				if records[recCount]['Spouse'] != '' :
-					baseImgFileName = records[recCount]['NameLast'] + '_' + records[recCount]['NameFirst'] + '-' + records[recCount]['Spouse']
-				else :
-					baseImgFileName = records[recCount]['NameLast'] + '_' + records[recCount]['NameFirst']
+				baseImgFileName = lastName + '_' + photoFirstName
 				if self.willBePngImg :
 					imgFile = os.path.join(self.pngImgDir, baseImgFileName + '.png')
 				else :
@@ -444,6 +456,9 @@ class PAMaker (object) :
 				scribus.setTextDistances(4, 0, 4, 0, verseBox)
 				scribus.hyphenateText(verseBox)
 
+				# Just for grins, lets colect data for an index
+#                paIndex[records[recCount]] = [lastName, firstName, pageNumber]
+
 				# Up our counts
 				if row >= self.dimensions['rows']['count'] - 1 :
 					row = 0
@@ -452,6 +467,20 @@ class PAMaker (object) :
 					row +=1
 
 				recCount +=1
+
+			# Create the index page here
+			# Output a new page for the index
+			if row == 0 and recCount != 0:
+				scribus.newPage(-1)
+				if pageSide == 'Odd' :
+					pageSide = 'Even'
+				else :
+					pageSide = 'Odd'
+
+				self.setPageNumber(crds, pageSide, 0, pageNumber)
+
+		# Outut the index entries at this point
+#        for key in paIndex.keys() :
 
 		# Report we are done now before we loose focus
 		scribus.statusMessage('Process Complete!')
