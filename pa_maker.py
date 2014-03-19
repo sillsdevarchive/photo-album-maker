@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ###############################################################################
 
 # Import Python modules
-import sys, os, csv, subprocess
+import sys, os, csv, subprocess, re
 
 # Set up the lib environment
 sys.path.insert(0, os.path.join(os.getcwd(), 'lib'))
@@ -77,7 +77,7 @@ class PAMaker (object) :
 		self.mode               = 'draft' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'ConferencePhotoBook-20140313.csv'
+		self.dataFileName       = 'ConferencePhotoBook-20140319.csv'
 #        self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
@@ -309,6 +309,41 @@ class PAMaker (object) :
 		scribus.setActiveLayer(al)                      # return to the original active layer
 
 
+	def fixText (self, text) :
+		'''Fix common format problems like quote markers, etc.'''
+
+		# Possessive marker
+		text = re.sub(ur'([a-zA-Z])\u0027s', ur'\1\u2019s', text)
+		# Abbreviation marker (we hope)
+		text = re.sub(ur'([a-zA-Z])\u0027([a-zA-Z])', ur'\1\u2019\2', text)
+		# Double open quote (start of line)
+		text = re.sub(ur'^\u0022', ur'\u201C', text)
+		# Double close quote (end of line)
+		text = re.sub(ur'\u0022$', ur'\u201D', text)
+		# Double open quote
+		text = re.sub(ur'\s\u0022', ur' \u201C', text)
+		# Double close quote
+		text = re.sub(ur'\u0022\s', ur'\u201D ', text)
+		text = re.sub(ur'\u0022\-', ur'\u201D-', text)
+		# Single open quote (start of line)
+		text = re.sub(ur'^\u0027', ur'\u2018', text)
+		# Single close quote (end of line)
+		text = re.sub(ur'\u0027$', ur'\u2019', text)
+		# Single open quote
+		text = re.sub(ur'\s\u0027', ur' \u2018', text)
+		# Single close quote
+		text = re.sub(ur'\u0027([\s\.\?\,])', ur'\u2019 ', text)
+		# Em dash
+		text = re.sub(ur'\u002D\u002D', ur'\u2014', text)
+		text = re.sub(ur'\s\u002D\s', ur'\u2014', text)
+		text = re.sub(ur'\s?\u007E\s?', ur'\u2014', text)
+		# Ellipsis
+		text = re.sub(ur'\.\.\.', ur'\u2026', text)
+
+		return text
+
+
+
 ###############################################################################
 ########################## Start the main process #############################
 ###############################################################################
@@ -439,7 +474,7 @@ class PAMaker (object) :
 
 				# Place the assignment element in this row
 				assignBox = scribus.createText(crds[row]['assignXPos'], crds[row]['assignYPos'], crds[row]['assignWidth'], crds[row]['assignHeight'])
-				scribus.setText(records[recCount]['Assignment'], assignBox)
+				scribus.setText(self.fixText(records[recCount]['Assignment']), assignBox)
 				scribus.setTextAlignment(scribus.ALIGN_LEFT, assignBox)
 				scribus.setFont(self.fonts['text']['italic'], assignBox)
 				scribus.setFontSize(self.fonts['text']['size'], assignBox)
@@ -448,7 +483,7 @@ class PAMaker (object) :
 
 				# Place the verse element in this row
 				verseBox = scribus.createText(crds[row]['verseXPos'], crds[row]['verseYPos'], crds[row]['verseWidth'], crds[row]['verseHeight'])
-				scribus.setText(records[recCount]['Prayer'], verseBox)
+				scribus.setText(self.fixText(records[recCount]['Prayer']), verseBox)
 				scribus.setTextAlignment(scribus.ALIGN_LEFT, verseBox)
 				scribus.setFont(self.fonts['verse']['regular'], verseBox)
 				scribus.setFontSize(self.fonts['verse']['size'], verseBox)
