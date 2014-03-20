@@ -77,8 +77,8 @@ class PAMaker (object) :
 		self.mode               = 'draft' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'ConferencePhotoBook-20140319.csv'
-#        self.dataFileName       = 'test.csv'
+#        self.dataFileName       = 'ConferencePhotoBook-20140319.csv'
+		self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
 		# Image density is 96 for electronic display and 300 for print
@@ -323,8 +323,7 @@ class PAMaker (object) :
 		# Double open quote
 		text = re.sub(ur'\s\u0022', ur' \u201C', text)
 		# Double close quote
-		text = re.sub(ur'\u0022\s', ur'\u201D ', text)
-		text = re.sub(ur'\u0022\-', ur'\u201D-', text)
+		text = re.sub(ur'\u0022([\s\.\?\,])', ur'\u201D\1', text)
 		# Single open quote (start of line)
 		text = re.sub(ur'^\u0027', ur'\u2018', text)
 		# Single close quote (end of line)
@@ -332,7 +331,7 @@ class PAMaker (object) :
 		# Single open quote
 		text = re.sub(ur'\s\u0027', ur' \u2018', text)
 		# Single close quote
-		text = re.sub(ur'\u0027([\s\.\?\,])', ur'\u2019 ', text)
+		text = re.sub(ur'\u0027([\s\.\?\,])', ur'\u2019\1', text)
 		# Em dash
 		text = re.sub(ur'\u002D\u002D', ur'\u2014', text)
 		text = re.sub(ur'\s\u002D\s', ur'\u2014', text)
@@ -342,6 +341,48 @@ class PAMaker (object) :
 
 		return text
 
+
+	def findVerseRef (self, text) :
+		'''Look for and return any verse references found in
+		a string. This will break if there is more than one
+		ref used in a string. :-( '''
+
+		if re.search(ur'.+(\([a-zA-Z]+\..+\))', text) :
+			return re.sub(ur'.+(\([a-zA-Z]+\..+\))', ur'\1', text)
+
+
+	def removeVerseRef (self, text) :
+		'''Remove a verse ref from a string.'''
+
+		return re.sub(ur'(.+)\s(\([a-zA-Z]+\..+\))', ur'\1', text)
+
+
+	def resizeFrame (self, frame) :
+
+		# Now adjust the frame to fit the text
+		# get some page and frame measure
+		(x, ph) = scribus.getPageSize();
+		(x, x, x, pm) = scribus.getPageMargins(); # warning: gets the margins from document setup not for the current page
+		(x, y) = scribus.getPosition(frame)
+		bottom = (ph - pm) - y
+		(w, h) = scribus.getSize(frame)
+		# if the frame doesn't overflow, shorten it to make it overflow
+		while (((scribus.textOverflows(frame) == 0) or (h > bottom)) and (h > 0)) :
+			h -= 10
+			scribus.sizeObject(w, h, frame)
+		# resize the frame in 10pt steps
+		while ((scribus.textOverflows(frame) > 0) and (h < bottom)) :
+			h += 10
+			scribus.sizeObject(w, h, frame)
+		# undo the latest 10pt step and fine adjust in 1pt steps
+		h -= 10
+		scribus.sizeObject(w, h, frame)
+		while ((scribus.textOverflows(frame) > 0) and (h < bottom)) :
+			h += 1
+			scribus.sizeObject(w, h, frame)
+
+		# For sizing operations return the frame height
+		return scribus.getSize(frame)[1]
 
 
 ###############################################################################
