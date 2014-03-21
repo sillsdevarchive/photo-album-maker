@@ -92,7 +92,6 @@ class ImgProcess (object) :
 				  '-background', 'none', '-rotate', '0',
 				   '-background', 'black', '( +clone -shadow 60x4+4+4 )', '+swap',
 					'-background', 'none', '-flatten', rtnFile]
-
 		# Run the command
 		try :
 			rCode = subprocess.call(cmd)
@@ -100,6 +99,23 @@ class ImgProcess (object) :
 		except Exception as e :
 			self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
 			return False
+
+
+	def makeGray (self, inFile, rtnFile) :
+		'''Change the color space on an image to gray.'''
+
+		cmd = ['convert', inFile, '-colorspace', 'Gray', rtnFile]
+		# Run the command
+		try :
+			rCode = subprocess.call(cmd)
+			return True
+		except Exception as e :
+			self.pa_tools.sendError('Imagemagick outline failed with: ' + str(e))
+			return False
+
+
+
+
 
 
 

@@ -77,8 +77,8 @@ class PAMaker (object) :
 		self.mode               = 'draft' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-#        self.dataFileName       = 'ConferencePhotoBook-20140319.csv'
-		self.dataFileName       = 'test.csv'
+		self.dataFileName       = 'ConferencePhotoBook-20140321.csv'
+#        self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
 		# Image density is 96 for electronic display and 300 for print
@@ -91,6 +91,8 @@ class PAMaker (object) :
 		self.viewPdf            = True
 		# Use PNG images for lossless quality
 		self.willBePngImg       = False
+		# If Gray-scale color space is needed set to False
+		self.rgbColor           = True
 
 		# The following are auto generated vals
 		self.dataDir            = os.path.join(self.projectDir, 'data')
@@ -204,7 +206,7 @@ class PAMaker (object) :
 				'nameFirstYPos'     : rowYPos,
 				'nameFirstXPos'     : rowXPos + nameLastHeight + 1,
 				'nameFirstHeight'   : nameFirstHeight,
-				'nameFirstWidth'    : imageWidth,
+				'nameFirstWidth'    : imageWidth * 1.25,
 				'imageYPos'         : rowYPos + nameFirstHeight + 1,
 				'imageXPos'         : rowXPos + nameLastHeight + 1,
 				'imageHeight'       : imageHeight,
@@ -347,17 +349,20 @@ class PAMaker (object) :
 		a string. This will break if there is more than one
 		ref used in a string. :-( '''
 
-		if re.search(ur'.+(\([a-zA-Z]+\..+\))', text) :
-			return re.sub(ur'.+(\([a-zA-Z]+\..+\))', ur'\1', text)
+		if re.search(ur'.+(\([0-9a-zA-Z]+\..+\))', text) :
+			return re.sub(ur'.+(\([0-9a-zA-Z]+\..+\))', ur'\1', text)
 
 
 	def removeVerseRef (self, text) :
 		'''Remove a verse ref from a string.'''
 
-		return re.sub(ur'(.+)\s(\([a-zA-Z]+\..+\))', ur'\1', text)
+		return re.sub(ur'(.+)\s(\([0-9a-zA-Z]+\..+\))', ur'\1', text)
 
 
 	def resizeFrame (self, frame) :
+		'''Resize a frame in place so that it fits the text inside it.
+		Code for this was take from:
+		http://wiki.scribus.net/canvas/Adjust_a_text_frame_to_fit_its_content'''
 
 		# Now adjust the frame to fit the text
 		# get some page and frame measure
@@ -381,8 +386,8 @@ class PAMaker (object) :
 			h += 1
 			scribus.sizeObject(w, h, frame)
 
-		# For sizing operations return the frame height
-		return scribus.getSize(frame)[1]
+		# For vertical sizing operations return the frame height
+		return int(scribus.getSize(frame)[1])
 
 
 ###############################################################################
@@ -410,6 +415,8 @@ class PAMaker (object) :
 		lastName        = ''
 		firstName       = ''
 		photoFirstName  = ''
+		verseRef        = ''
+		verseText       = ''
 
 		# Get the page layout coordinates for this publication
 		crds = self.getCoordinates(self.dimensions)
@@ -480,9 +487,13 @@ class PAMaker (object) :
 				orgImgFile = os.path.join(self.orgImgDir, orgImgFileName)
 				baseImgFileName = lastName + '_' + photoFirstName
 				if self.willBePngImg :
-					imgFile = os.path.join(self.pngImgDir, baseImgFileName + '.png')
+					ext = 'png'
 				else :
-					imgFile = os.path.join(self.jpgImgDir, baseImgFileName + '.jpg')
+					ext = 'jpg'
+				if not self.rgbColor :
+					imgFile = os.path.join(getattr(self, ext + 'ImgDir'), baseImgFileName + '-gray' + '.' + ext)
+				else :
+					imgFile = os.path.join(getattr(self, ext + 'ImgDir'), baseImgFileName + '.' + ext)
 
 				# Process the image now if there is none
 				if not os.path.exists(imgFile) :
@@ -490,6 +501,9 @@ class PAMaker (object) :
 #                    self.img_process.outlinePic(imgFile, imgFile)
 					self.img_process.scalePic(imgFile, imgFile, self.imgDensity)
 					self.img_process.addPoloroidBorder(imgFile, imgFile)
+					# Color RGB is the default
+					if not self.rgbColor :
+						self.img_process.makeGray(imgFile, imgFile)
 
 				# Double check the output and substitute with placeholder pic
 				if not os.path.exists(imgFile) :
@@ -521,19 +535,48 @@ class PAMaker (object) :
 				scribus.setFontSize(self.fonts['text']['size'], assignBox)
 				scribus.setLineSpacing(self.fonts['text']['size'] + 1, assignBox)
 				scribus.setTextDistances(4, 0, 0, 0, assignBox)
+				# Resize the frame height and determine the difference for
+				# placing the next frame below it
+				assignHeightNew = self.resizeFrame(assignBox)
+				assignHeightDiff = crds[row]['assignHeight'] - assignHeightNew
 
 				# Place the verse element in this row
-				verseBox = scribus.createText(crds[row]['verseXPos'], crds[row]['verseYPos'], crds[row]['verseWidth'], crds[row]['verseHeight'])
-				scribus.setText(self.fixText(records[recCount]['Prayer']), verseBox)
+				verseYPosNew = crds[row]['verseYPos'] - assignHeightDiff
+				verseBox = scribus.createText(crds[row]['verseXPos'], verseYPosNew, crds[row]['verseWidth'], crds[row]['verseHeight'])
+				# The verse element may be either a Scripture verse or a prayer request
+				# If it is Scripture, and it has a verse ref, we want to set that
+				# seperatly so we need to do a little preprocess on the text to find
+				# out if it has a ref. This script will only recognize references
+				# at the end of the string that are enclosed in brackets. See the
+				# findVerseRef() function for more details
+				verseRef = self.findVerseRef(records[recCount]['Prayer'])
+				if verseRef :
+					verseText = self.removeVerseRef(self.fixText(records[recCount]['Prayer']))
+					scribus.setText(verseText, verseBox)
+				else :
+					scribus.setText(self.fixText(records[recCount]['Prayer']), verseBox)
 				scribus.setTextAlignment(scribus.ALIGN_LEFT, verseBox)
 				scribus.setFont(self.fonts['verse']['regular'], verseBox)
 				scribus.setFontSize(self.fonts['verse']['size'], verseBox)
 				scribus.setLineSpacing(self.fonts['verse']['size'] + 1, verseBox)
 				scribus.setTextDistances(4, 0, 4, 0, verseBox)
 				scribus.hyphenateText(verseBox)
-
-				# Just for grins, lets colect data for an index
-#                paIndex[records[recCount]] = [lastName, firstName, pageNumber]
+				# Get the height difference in case we need to set ref box
+				verseHeightNew = self.resizeFrame(verseBox)
+				verseHeightDiff = crds[row]['verseHeight'] - verseHeightNew
+				if verseRef :
+					# Set coordinates for this box
+					vRefBoxX = crds[row]['verseXPos']
+					vRefBoxY = (verseYPosNew + verseHeightNew)
+					vRefBoxH = crds[row]['nameFirstHeight'] / 2
+					vRefBoxW = crds[row]['verseWidth']
+					verseRefBox = scribus.createText(vRefBoxX, vRefBoxY, vRefBoxW, vRefBoxH)
+					scribus.setText(verseRef, verseRefBox)
+					scribus.setTextAlignment(scribus.ALIGN_RIGHT, verseRefBox)
+					scribus.setFont(self.fonts['verse']['italic'], verseRefBox)
+					scribus.setFontSize(self.fonts['verse']['size'] - 2, verseRefBox)
+					scribus.setLineSpacing(self.fonts['verse']['size'], verseRefBox)
+					scribus.setTextDistances(2, 0, 0, 0, verseRefBox)
 
 				# Up our counts
 				if row >= self.dimensions['rows']['count'] - 1 :
