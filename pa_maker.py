@@ -77,8 +77,8 @@ class PAMaker (object) :
 		self.mode               = 'final' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'ConferencePhotoBook-20140322.csv'
-#        self.dataFileName       = 'test.csv'
+#        self.dataFileName       = 'ConferencePhotoBook-20140322.csv'
+		self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
 		# Image density is 96 for electronic display and 300 for print
@@ -337,15 +337,8 @@ class PAMaker (object) :
 		text = re.sub(ur'^\u0022', ur'\u201C', text)
 		# Double close quote (end of line)
 		text = re.sub(ur'\u0022$', ur'\u201D', text)
-
-# FIXME: Test this next regex
-
-		# Double open quote
+		# Double open quote (w/dash or space)
 		text = re.sub(ur'([\-\s])\u0022', ur'\1\u201C', text)
-
-
-
-
 		# Double close quote
 		text = re.sub(ur'\u0022([\s\.\?\,])', ur'\u201D\1', text)
 		# Em dash
