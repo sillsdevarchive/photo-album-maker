@@ -74,10 +74,10 @@ class PAMaker (object) :
 ###############################################################################
 
 		# This first set of vars are set by the user
-		self.mode               = 'draft' # Whatever is inserted here will be the watermark
+		self.mode               = 'final' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-		self.dataFileName       = 'ConferencePhotoBook-20140321.csv'
+		self.dataFileName       = 'ConferencePhotoBook-20140322.csv'
 #        self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
 		self.maxHeight          = '400'
@@ -93,6 +93,10 @@ class PAMaker (object) :
 		self.willBePngImg       = False
 		# If Gray-scale color space is needed set to False
 		self.rgbColor           = True
+		# If hyphenation is wanted
+		self.hyphenate          = False
+		# Use page numbers?
+		self.pageNumbers        = False
 
 		# The following are auto generated vals
 		self.dataDir            = os.path.join(self.projectDir, 'data')
@@ -253,19 +257,20 @@ class PAMaker (object) :
 
 
 	def setPageNumber (self, crds, pageSide, row, pageNumber) :
-		'''Place the page number on the page'''
+		'''Place the page number on the page if called for.'''
 
-		# Make the page number box
-		pNumBox = scribus.createText(crds[row]['pageNumXPos' + pageSide], crds[row]['pageNumYPos'], crds[row]['pageNumWidth'], crds[row]['pageNumHeight'])
-		# Put the page number in it and format according to the page we are on
-		scribus.setText(`pageNumber`, pNumBox)
-		if pageSide == 'Odd' :
-			scribus.setTextAlignment(scribus.ALIGN_RIGHT, pNumBox)
-		else:
-			scribus.setTextAlignment(scribus.ALIGN_LEFT, pNumBox)
+		if self.pageNumbers :
+			# Make the page number box
+			pNumBox = scribus.createText(crds[row]['pageNumXPos' + pageSide], crds[row]['pageNumYPos'], crds[row]['pageNumWidth'], crds[row]['pageNumHeight'])
+			# Put the page number in it and format according to the page we are on
+			scribus.setText(`pageNumber`, pNumBox)
+			if pageSide == 'Odd' :
+				scribus.setTextAlignment(scribus.ALIGN_RIGHT, pNumBox)
+			else:
+				scribus.setTextAlignment(scribus.ALIGN_LEFT, pNumBox)
 
-		scribus.setFont(self.fonts['pageNum']['bold'], pNumBox)
-		scribus.setFontSize(self.fonts['pageNum']['size'], pNumBox)
+			scribus.setFont(self.fonts['pageNum']['bold'], pNumBox)
+			scribus.setFontSize(self.fonts['pageNum']['size'], pNumBox)
 
 
 	def sanitise (self, row) :
@@ -314,18 +319,12 @@ class PAMaker (object) :
 	def fixText (self, text) :
 		'''Fix common format problems like quote markers, etc.'''
 
+		# Strip out problems characters
+		text = re.sub(ur'\u200B', ur'', text)
 		# Possessive marker
 		text = re.sub(ur'([a-zA-Z])\u0027s', ur'\1\u2019s', text)
 		# Abbreviation marker (we hope)
 		text = re.sub(ur'([a-zA-Z])\u0027([a-zA-Z])', ur'\1\u2019\2', text)
-		# Double open quote (start of line)
-		text = re.sub(ur'^\u0022', ur'\u201C', text)
-		# Double close quote (end of line)
-		text = re.sub(ur'\u0022$', ur'\u201D', text)
-		# Double open quote
-		text = re.sub(ur'\s\u0022', ur' \u201C', text)
-		# Double close quote
-		text = re.sub(ur'\u0022([\s\.\?\,])', ur'\u201D\1', text)
 		# Single open quote (start of line)
 		text = re.sub(ur'^\u0027', ur'\u2018', text)
 		# Single close quote (end of line)
@@ -333,7 +332,22 @@ class PAMaker (object) :
 		# Single open quote
 		text = re.sub(ur'\s\u0027', ur' \u2018', text)
 		# Single close quote
-		text = re.sub(ur'\u0027([\s\.\?\,])', ur'\u2019\1', text)
+		text = re.sub(ur'\u0027([\"\s\.\?\,])', ur'\u2019\1', text)
+		# Double open quote (start of line)
+		text = re.sub(ur'^\u0022', ur'\u201C', text)
+		# Double close quote (end of line)
+		text = re.sub(ur'\u0022$', ur'\u201D', text)
+
+# FIXME: Test this next regex
+
+		# Double open quote
+		text = re.sub(ur'([\-\s])\u0022', ur'\1\u201C', text)
+
+
+
+
+		# Double close quote
+		text = re.sub(ur'\u0022([\s\.\?\,])', ur'\u201D\1', text)
 		# Em dash
 		text = re.sub(ur'\u002D\u002D', ur'\u2014', text)
 		text = re.sub(ur'\s\u002D\s', ur'\u2014', text)
@@ -530,6 +544,10 @@ class PAMaker (object) :
 				# Place the assignment element in this row
 				assignBox = scribus.createText(crds[row]['assignXPos'], crds[row]['assignYPos'], crds[row]['assignWidth'], crds[row]['assignHeight'])
 				scribus.setText(self.fixText(records[recCount]['Assignment']), assignBox)
+				# Assign style to box
+#                scribus.createParagraphStyle(name='assignStyle', alignment=0, leftmargin=10, firstindent=-10)
+#                scribus.setStyle('assignStyle', assignBox)
+				# Hard formated box
 				scribus.setTextAlignment(scribus.ALIGN_LEFT, assignBox)
 				scribus.setFont(self.fonts['text']['italic'], assignBox)
 				scribus.setFontSize(self.fonts['text']['size'], assignBox)
@@ -555,12 +573,17 @@ class PAMaker (object) :
 					scribus.setText(verseText, verseBox)
 				else :
 					scribus.setText(self.fixText(records[recCount]['Prayer']), verseBox)
-				scribus.setTextAlignment(scribus.ALIGN_LEFT, verseBox)
+				# Can't find a way to set alignment to justified using setTextAlignment()
+#                scribus.setTextAlignment(scribus.ALIGN_LEFT, verseBox)
+				# Because of this, we make a style which seems to work
+				scribus.createParagraphStyle(name='vBoxStyle', alignment=3)
+				scribus.setStyle('vBoxStyle', verseBox)
 				scribus.setFont(self.fonts['verse']['regular'], verseBox)
 				scribus.setFontSize(self.fonts['verse']['size'], verseBox)
 				scribus.setLineSpacing(self.fonts['verse']['size'] + 1, verseBox)
 				scribus.setTextDistances(4, 0, 4, 0, verseBox)
-				scribus.hyphenateText(verseBox)
+				if self.hyphenate :
+					scribus.hyphenateText(verseBox)
 				# Get the height difference in case we need to set ref box
 				verseHeightNew = self.resizeFrame(verseBox)
 				verseHeightDiff = crds[row]['verseHeight'] - verseHeightNew
