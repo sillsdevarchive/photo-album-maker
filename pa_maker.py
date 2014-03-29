@@ -74,25 +74,25 @@ class PAMaker (object) :
 ###############################################################################
 
 		# This first set of vars are set by the user
-		self.mode               = 'final' # Whatever is inserted here will be the watermark
+		self.mode               = 'draft' # Whatever is inserted here will be the watermark
 		self.projectDir         = '/home/dennis/Publishing/MSEAG/CPA2014'
 		# Data file must be a csv file in the MS Excel dialect
-#        self.dataFileName       = 'ConferencePhotoBook-20140322.csv'
-		self.dataFileName       = 'test.csv'
+		self.dataFileName       = 'ConferencePhotoBook-20140322.csv'
+#        self.dataFileName       = 'test.csv'
 		# Max height for print will be around 800-1000px, electronic view 200-400px
-		self.maxHeight          = '400'
+		self.maxHeight          = '1000'
 		# Image density is 96 for electronic display and 300 for print
-		self.imgDensity         = '96'
+		self.imgDensity         = '300'
 		# Turn on watermark (output mode)
 		self.outputWatermark    = False
 		# Have Scribus create/export the PDF
-		self.makePdf            = False
+		self.makePdf            = True
 		# View the PDF after it has been made
 		self.viewPdf            = True
 		# Use PNG images for lossless quality
-		self.willBePngImg       = False
+		self.willBePngImg       = True
 		# If Gray-scale color space is needed set to False
-		self.rgbColor           = True
+		self.rgbColor           = False
 		# If hyphenation is wanted
 		self.hyphenate          = False
 		# Use page numbers?
@@ -110,6 +110,11 @@ class PAMaker (object) :
 		self.pngImgDir          = os.path.join(self.imagesDir, 'png')
 		self.placeholderPic     = os.path.join(self.imagesDir, 'profile.png')
 		self.watermark          = self.mode.upper()
+
+# FIXME: File naming needs to use current dates, not the data set, gets confusing otherwise
+#        Also, we need to add a name for the Scribus document as well and auto save it
+#        when we get to that part of the process. The mode should be added to the name as well.
+
 		# The PDF output location is determined by the mode
 		self.pdfFile            = os.path.join(getattr(self, self.mode + 'Dir'), self.dataFileName.replace('csv', 'pdf'))
 		self.dataFile           = os.path.join(self.dataDir, self.dataFileName)
